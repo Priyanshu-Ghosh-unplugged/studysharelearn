@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, LogOut, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -13,6 +16,7 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,6 +31,11 @@ const Navbar = () => {
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
     setIsMobileMenuOpen(false);
   };
 
@@ -63,12 +72,38 @@ const Navbar = () => {
 
           {/* Desktop CTAs */}
           <div className="hidden lg:flex items-center gap-4">
-            <button className={isScrolled ? "btn-outline" : "btn-outline-white"}>
-              Sign In
-            </button>
-            <button className="btn-primary">
-              Get Started
-            </button>
+            {user ? (
+              <>
+                <div className={`flex items-center gap-2 ${isScrolled ? "text-foreground" : "text-white"}`}>
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium truncate max-w-32">
+                    {user.user_metadata?.full_name || user.email}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className={isScrolled ? "" : "border-white/80 text-white hover:bg-white hover:text-accent"}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <button className={isScrolled ? "btn-outline" : "btn-outline-white"}>
+                    Sign In
+                  </button>
+                </Link>
+                <Link to="/auth">
+                  <button className="btn-primary">
+                    Get Started
+                  </button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -116,8 +151,30 @@ const Navbar = () => {
               </button>
             ))}
             <hr className="my-4 border-border" />
-            <button className="btn-outline w-full">Sign In</button>
-            <button className="btn-primary w-full">Get Started</button>
+            
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 text-foreground mb-2">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium truncate">
+                    {user.user_metadata?.full_name || user.email}
+                  </span>
+                </div>
+                <Button onClick={handleSignOut} variant="outline" className="w-full">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                  <button className="btn-outline w-full">Sign In</button>
+                </Link>
+                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                  <button className="btn-primary w-full">Get Started</button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
