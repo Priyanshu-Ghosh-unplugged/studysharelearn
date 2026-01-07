@@ -17,7 +17,7 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isTutor, setIsTutor] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { user, signOut } = useAuth();
 
   useEffect(() => {
@@ -26,12 +26,12 @@ const Navbar = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
         .then(({ data }) => {
-          setIsTutor(data?.role === "tutor");
+          setUserRole(data?.role || null);
         });
     } else {
-      setIsTutor(false);
+      setUserRole(null);
     }
   }, [user]);
 
@@ -97,8 +97,8 @@ const Navbar = () => {
                     {user.user_metadata?.full_name || user.email}
                   </span>
                 </div>
-                {isTutor && (
-                  <Link to="/tutor/dashboard">
+                {userRole && (
+                  <Link to={userRole === "tutor" ? "/tutor/dashboard" : "/student/dashboard"}>
                     <Button
                       variant="outline"
                       size="sm"
@@ -189,8 +189,8 @@ const Navbar = () => {
                     {user.user_metadata?.full_name || user.email}
                   </span>
                 </div>
-                {isTutor && (
-                  <Link to="/tutor/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                {userRole && (
+                  <Link to={userRole === "tutor" ? "/tutor/dashboard" : "/student/dashboard"} onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full mb-2">
                       <LayoutDashboard className="w-4 h-4 mr-2" />
                       Dashboard
