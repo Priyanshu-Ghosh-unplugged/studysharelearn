@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -16,7 +17,23 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTutor, setIsTutor] = useState(false);
   const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          setIsTutor(data?.role === "tutor");
+        });
+    } else {
+      setIsTutor(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -80,6 +97,18 @@ const Navbar = () => {
                     {user.user_metadata?.full_name || user.email}
                   </span>
                 </div>
+                {isTutor && (
+                  <Link to="/tutor/dashboard">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={isScrolled ? "" : "border-white/80 text-white hover:bg-white hover:text-accent"}
+                    >
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -160,6 +189,14 @@ const Navbar = () => {
                     {user.user_metadata?.full_name || user.email}
                   </span>
                 </div>
+                {isTutor && (
+                  <Link to="/tutor/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full mb-2">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                )}
                 <Button onClick={handleSignOut} variant="outline" className="w-full">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
