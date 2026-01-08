@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Mail, CheckCircle, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "success" | "error" | "loading">("idle");
   const [message, setMessage] = useState("");
 
   const validateEmail = (email: string) => {
@@ -11,7 +12,7 @@ const NewsletterSection = () => {
     return regex.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateEmail(email)) {
@@ -20,14 +21,27 @@ const NewsletterSection = () => {
       return;
     }
 
-    // Store in localStorage as a stub
-    const subscribers = JSON.parse(localStorage.getItem("newsletter_subscribers") || "[]");
-    subscribers.push({ email, subscribedAt: new Date().toISOString() });
-    localStorage.setItem("newsletter_subscribers", JSON.stringify(subscribers));
+    setStatus("loading");
 
-    setStatus("success");
-    setMessage("Thank you for subscribing! You'll receive updates soon.");
-    setEmail("");
+    // Store in database securely instead of localStorage
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({ email: email.trim().toLowerCase() });
+
+    if (error) {
+      if (error.code === '23505') {
+        // Unique constraint violation - email already subscribed
+        setStatus("success");
+        setMessage("You're already subscribed! Thank you for your interest.");
+      } else {
+        setStatus("error");
+        setMessage("Subscription failed. Please try again later.");
+      }
+    } else {
+      setStatus("success");
+      setMessage("Thank you for subscribing! You'll receive updates soon.");
+      setEmail("");
+    }
 
     // Reset after 5 seconds
     setTimeout(() => {
@@ -54,13 +68,18 @@ const NewsletterSection = () => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             className="flex-1 px-5 py-3 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            disabled={status === "loading"}
           />
-          <button type="submit" className="btn-primary whitespace-nowrap">
-            Subscribe
+          <button 
+            type="submit" 
+            className="btn-primary whitespace-nowrap"
+            disabled={status === "loading"}
+          >
+            {status === "loading" ? "Subscribing..." : "Subscribe"}
           </button>
         </form>
 
-        {status !== "idle" && (
+        {status !== "idle" && status !== "loading" && (
           <div
             className={`mt-4 flex items-center justify-center gap-2 ${
               status === "success" ? "text-green-600" : "text-red-500"

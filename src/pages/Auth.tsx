@@ -9,7 +9,18 @@ import { z } from 'zod';
 import { GraduationCap, BookOpen, ArrowLeft, Mail, Lock, User } from 'lucide-react';
 
 const emailSchema = z.string().trim().email({ message: "Please enter a valid email address" });
-const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters" });
+const passwordSchema = z.string()
+  .min(8, { message: "Password must be at least 8 characters" })
+  .max(128, { message: "Password must be less than 128 characters" })
+  .refine((val) => /[a-z]/.test(val), {
+    message: "Password must contain at least one lowercase letter"
+  })
+  .refine((val) => /[A-Z]/.test(val), {
+    message: "Password must contain at least one uppercase letter"
+  })
+  .refine((val) => /[0-9]/.test(val), {
+    message: "Password must contain at least one number"
+  });
 const nameSchema = z.string().trim().min(2, { message: "Name must be at least 2 characters" }).max(100);
 
 export default function Auth() {
@@ -66,19 +77,12 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: "Login failed",
-              description: "Invalid email or password. Please try again.",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Login failed",
-              description: error.message,
-              variant: "destructive"
-            });
-          }
+          // Generic message - don't reveal if account exists (prevents enumeration)
+          toast({
+            title: "Authentication failed",
+            description: "Invalid email or password. Please check your credentials and try again.",
+            variant: "destructive"
+          });
         } else {
           toast({
             title: "Welcome back!",
@@ -89,19 +93,12 @@ export default function Auth() {
       } else {
         const { error } = await signUp(email, password, fullName, role);
         if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: "Account exists",
-              description: "This email is already registered. Please sign in instead.",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Sign up failed",
-              description: error.message,
-              variant: "destructive"
-            });
-          }
+          // Generic message - don't reveal if email is already registered (prevents enumeration)
+          toast({
+            title: "Registration failed",
+            description: "Unable to create account. Please try a different email or contact support.",
+            variant: "destructive"
+          });
         } else {
           toast({
             title: "Account created!",
